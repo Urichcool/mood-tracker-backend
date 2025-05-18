@@ -8,7 +8,9 @@ import { UsersModule } from './modules/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     MongooseModule.forRoot(process.env.MONGO_URL || ''),
     UsersModule,
   ],

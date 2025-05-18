@@ -21,6 +21,10 @@ export class CreateUserDto {
   @IsDefined()
   name: string;
 
+  @IsString()
+  @IsDefined()
+  imageLink: string;
+
   @IsArray()
   @IsDefined()
   @ValidateNested({ each: true })
