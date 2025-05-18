@@ -12,4 +12,8 @@ export class UsersService {
     const createdUser = new this.UserModel(user);
     return createdUser.save();
   }
+
+  update(id: string, updatedName) {
+    return this.UserModel.findByIdAndUpdate(id, { name: updatedName });
+  }
 }

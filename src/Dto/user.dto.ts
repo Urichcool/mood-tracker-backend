@@ -27,3 +27,17 @@ export class CreateUserDto {
   @Type(() => CreateMoodEntriesDto)
   moodEntries: CreateMoodEntriesDto[];
 }
+
+export class UpdateUserDto {
+  @IsString()
+  @IsDefined()
+  id: string;
+
+  @IsString()
+  @IsDefined()
+  updatedName: string;
+
+  @IsEmail()
+  @IsDefined()
+  email: string;
+}
