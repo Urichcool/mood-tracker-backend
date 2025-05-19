@@ -25,7 +25,7 @@ export class UsersService {
     const result = await this.imageService.uploadToCloudinary(updatedPicture);
     if (result) {
       const imageUrl = result.secure_url;
-      return this.UserModel.findByIdAndUpdate(id, { image: imageUrl });
+      return this.UserModel.findByIdAndUpdate(id, { imageUrl: imageUrl });
     }
   }
 }

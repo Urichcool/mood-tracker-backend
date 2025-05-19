@@ -4,6 +4,6 @@ export interface IUser {
   email: string;
   password: string;
   name: string;
-  imageLink: string;
+  imageUrl: string;
   moodEntries: IMoodEntries[];
 }

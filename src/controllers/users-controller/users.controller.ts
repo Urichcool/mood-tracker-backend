@@ -7,7 +7,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateUserDto, UpdateUserDto } from 'src/Dto/user.dto';
+import {
+  CreateUserDto,
+  UpdateUserNameDto,
+  UpdateUserPictureDto,
+} from 'src/Dto/user.dto';
 import { UsersService } from 'src/services/users/users.service';
 
 @Controller('Users')
@@ -21,19 +25,18 @@ export class UsersController {
 
   @Patch()
   async updateUserName(
-    @Body() body: UpdateUserDto,
+    @Body() body: UpdateUserNameDto,
   ): Promise<{ message: string }> {
     await this.usersService.updateName(body.id, body.updatedName);
     return { message: `user's ${body.email} name updated` };
   }
 
   @Patch('upload/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('image'))
   async uploadImage(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: UpdateUserDto,
+    @Body() body: UpdateUserPictureDto,
   ) {
-    console.log(process.env.CLOUDINARY_API_KEY);
     await this.usersService.updateImage(body.id, file);
     return { message: `user's ${body.email} image updated` };
   }

@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { UploadApiResponse } from 'cloudinary';
-import cloudinary from 'src/providers/cloudinary-providers';
+import { Inject, Injectable } from '@nestjs/common';
+import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 
 @Injectable()
 export class ImageService {
+  constructor(
+    @Inject('CLOUDINARY') private cloudinaryInstance: typeof cloudinary,
+  ) {}
   async uploadToCloudinary(
     file: Express.Multer.File,
   ): Promise<UploadApiResponse | undefined> {

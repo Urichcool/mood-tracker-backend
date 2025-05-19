@@ -13,6 +13,9 @@ export class User {
   @Prop()
   name: string;
 
+  @Prop()
+  imageUrl: string;
+
   @Prop({ type: [MoodEntries] })
   moodEntries: MoodEntries[];
 }

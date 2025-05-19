@@ -23,7 +23,7 @@ export class CreateUserDto {
 
   @IsString()
   @IsDefined()
-  imageLink: string;
+  imageUrl: string;
 
   @IsArray()
   @IsDefined()
@@ -32,7 +32,7 @@ export class CreateUserDto {
   moodEntries: CreateMoodEntriesDto[];
 }
 
-export class UpdateUserDto {
+export class UpdateUserNameDto {
   @IsString()
   @IsDefined()
   id: string;
@@ -40,6 +40,16 @@ export class UpdateUserDto {
   @IsString()
   @IsDefined()
   updatedName: string;
+
+  @IsEmail()
+  @IsDefined()
+  email: string;
+}
+
+export class UpdateUserPictureDto {
+  @IsString()
+  @IsDefined()
+  id: string;
 
   @IsEmail()
   @IsDefined()
