@@ -28,4 +28,8 @@ export class UsersService {
       return this.UserModel.findByIdAndUpdate(id, { imageUrl: imageUrl });
     }
   }
+
+  async findUser(email: string) {
+    return this.UserModel.findOne({ email });
+  }
 }
