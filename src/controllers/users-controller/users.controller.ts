@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Patch,
@@ -37,7 +38,21 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
     @Body() body: UpdateUserPictureDto,
   ) {
-    await this.usersService.updateImage(body.id, file);
-    return { message: `user's ${body.email} image updated` };
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!file) throw new BadRequestException('Image file is required');
+
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('File size exceeds 5MB');
+    }
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(`Invalid file type: ${file.mimetype}`);
+    }
+
+    if (file) {
+      await this.usersService.updateImage(body.id, file);
+      return { message: `user's ${body.email} image updated` };
+    }
   }
 }

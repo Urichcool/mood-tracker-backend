@@ -1,18 +1,66 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ImageService } from './image.service';
+import { UploadApiResponse } from 'cloudinary';
+import { Writable } from 'stream';
+import { v2 as cloudinary } from 'cloudinary';
 
 describe('ImageService', () => {
   let service: ImageService;
+  let mockUploadStreamFn: jest.Mock;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [ImageService],
-    }).compile();
+  beforeEach(() => {
+    mockUploadStreamFn = jest.fn();
 
-    service = module.get<ImageService>(ImageService);
+    const mockCloudinary = {
+      uploader: {
+        upload_stream: mockUploadStreamFn,
+      },
+    };
+
+    service = new ImageService(mockCloudinary as unknown as typeof cloudinary);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('should resolve with result if upload succeeds', async () => {
+    const mockFile = {
+      buffer: Buffer.from('test image buffer'),
+    } as Express.Multer.File;
+
+    const mockResult = {
+      secure_url: 'https://image.com/image.png',
+      public_id: 'some_id',
+      resource_type: 'image',
+    } as UploadApiResponse;
+
+    mockUploadStreamFn.mockImplementation((options, cb) => {
+      const writable = new Writable({
+        write(chunk, encoding, callback) {
+          cb(null, mockResult);
+          callback();
+        },
+      });
+      return writable;
+    });
+
+    const result = await service.uploadToCloudinary(mockFile);
+    expect(result).toEqual(mockResult);
+  });
+
+  it('should reject with error if upload fails', async () => {
+    const mockFile = {
+      buffer: Buffer.from('fail buffer'),
+    } as Express.Multer.File;
+
+    mockUploadStreamFn.mockImplementation((options, cb) => {
+      const writable = new Writable({
+        write(chunk, encoding, callback) {
+          cb(new Error('Upload failed'), null);
+          callback();
+        },
+      });
+      return writable;
+    });
+
+    await expect(service.uploadToCloudinary(mockFile)).rejects.toThrow(
+      'Upload failed',
+    );
   });
 });

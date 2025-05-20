@@ -11,7 +11,7 @@ export class ImageService {
     file: Express.Multer.File,
   ): Promise<UploadApiResponse | undefined> {
     return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
+      const uploadStream = this.cloudinaryInstance.uploader.upload_stream(
         {
           folder: 'mood-tracker/profiles',
           resource_type: 'image',
