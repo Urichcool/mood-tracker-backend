@@ -3,6 +3,11 @@ import { UploadApiResponse } from 'cloudinary';
 import { Writable } from 'stream';
 import { v2 as cloudinary } from 'cloudinary';
 
+type UploadCallback = (
+  error: Error | null | undefined,
+  result?: UploadApiResponse,
+) => void;
+
 describe('ImageService', () => {
   let service: ImageService;
   let mockUploadStreamFn: jest.Mock;
@@ -30,7 +35,7 @@ describe('ImageService', () => {
       resource_type: 'image',
     } as UploadApiResponse;
 
-    mockUploadStreamFn.mockImplementation((options, cb) => {
+    mockUploadStreamFn.mockImplementation((options, cb: UploadCallback) => {
       const writable = new Writable({
         write(chunk, encoding, callback) {
           cb(null, mockResult);
@@ -49,10 +54,10 @@ describe('ImageService', () => {
       buffer: Buffer.from('fail buffer'),
     } as Express.Multer.File;
 
-    mockUploadStreamFn.mockImplementation((options, cb) => {
+    mockUploadStreamFn.mockImplementation((options, cb: UploadCallback) => {
       const writable = new Writable({
         write(chunk, encoding, callback) {
-          cb(new Error('Upload failed'), null);
+          cb(new Error('Upload failed'), undefined);
           callback();
         },
       });
