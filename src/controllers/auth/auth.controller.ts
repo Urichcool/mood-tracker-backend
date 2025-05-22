@@ -1,15 +1,19 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Request,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { SignInDto } from 'src/Dto/signIn.dto';
 import { AuthService } from 'src/services/auth/auth.service';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from 'src/guards/auth/auth.guard';
 
 @Controller('Auth')
 export class AuthController {
@@ -33,6 +37,12 @@ export class AuthController {
       secure: this.checkSecure(),
       maxAge: 3600000,
     });
-    return { message: 'Logged in' };
+    return { message: `User ${body.email} has been logged in` };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
   }
 }
