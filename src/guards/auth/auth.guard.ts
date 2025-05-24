@@ -13,12 +13,8 @@ interface JwtPayload {
   username: string;
 }
 
-type TokenObject = {
-  access_token: string;
-};
-
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class RefreshTokenGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -26,13 +22,13 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token = this.extractTokenFromCookies(request);
     if (!token) {
       throw new UnauthorizedException('token required');
     }
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
       request['user'] = payload;
     } catch {
@@ -41,15 +37,11 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+  private extractTokenFromCookies(req: Request): string | undefined {
+    const token = req.cookies?.refreshToken as string;
     if (!token) {
       throw new UnauthorizedException('token required');
     }
-    const decoded: string = decodeURIComponent(token);
-    const tokenObj = JSON.parse(decoded.replace(/^j:/, '')) as TokenObject;
-
-    const jwtToken = tokenObj.access_token;
-    return type === 'Bearer' ? jwtToken : undefined;
+    return token;
   }
 }
