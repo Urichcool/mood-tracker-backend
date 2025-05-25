@@ -21,8 +21,12 @@ export class RefreshTokenGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: Request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromCookies(request);
+    const req = context
+      .switchToHttp()
+      .getRequest<Request & { cookies: Record<string, string> }>();
+
+    const token = req.cookies?.refreshToken as string;
+    console.log(token);
     if (!token) {
       throw new UnauthorizedException('token required');
     }
@@ -30,18 +34,10 @@ export class RefreshTokenGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
-      request['user'] = payload;
+      req['user'] = payload;
     } catch {
       throw new UnauthorizedException();
     }
     return true;
-  }
-
-  private extractTokenFromCookies(req: Request): string | undefined {
-    const token = req.cookies?.refreshToken as string;
-    if (!token) {
-      throw new UnauthorizedException('token required');
-    }
-    return token;
   }
 }

@@ -13,18 +13,26 @@ import {
   UpdateUserNameDto,
   UpdateUserPictureDto,
 } from 'src/Dto/user.dto';
+import { AuthService } from 'src/services/auth/auth.service';
 import { UsersService } from 'src/services/users/users.service';
 
 @Controller('Users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
-  @Post()
-  async createUser(@Body() body: CreateUserDto): Promise<{ message: string }> {
-    await this.usersService.create(body);
-    return { message: `user ${body.email} created` };
+  constructor(
+    private usersService: UsersService,
+    private authService: AuthService,
+  ) {}
+  @Post('register')
+  async register(@Body() body: CreateUserDto): Promise<{ message: string }> {
+    const user = (await this.usersService.create(body)) as {
+      id: string;
+      email: string;
+    };
+    const tokens = await this.authService.register(user.id, user.email);
+    return { message: `user ${user.email} created` };
   }
 
-  @Patch()
+  @Patch('update/name')
   async updateUserName(
     @Body() body: UpdateUserNameDto,
   ): Promise<{ message: string }> {

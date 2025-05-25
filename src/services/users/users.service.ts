@@ -29,7 +29,17 @@ export class UsersService {
     }
   }
 
-  async findUser(email: string) {
+  findUser(email: string) {
     return this.UserModel.findOne({ email });
+  }
+
+  UpdateRefreshToken(id: string, token: string) {
+    return this.UserModel.findByIdAndUpdate(id, { refreshToken: token });
+  }
+
+  async setRefreshToken(userId: string, hashedToken: string) {
+    await this.UserModel.findByIdAndUpdate(userId, {
+      refreshTokenHash: hashedToken,
+    });
   }
 }

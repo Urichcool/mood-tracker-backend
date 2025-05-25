@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +11,15 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
+
+  async register(id: string, email: string) {
+    const tokens = await this.generateTokens(id, email);
+    await this.usersService.setRefreshToken(
+      id,
+      this.hashToken(tokens.refreshToken),
+    );
+    return tokens;
+  }
 
   async signIn(
     email: string,
@@ -23,21 +33,27 @@ export class AuthService {
       throw new UnauthorizedException('Password is incorrect');
     }
 
-    const payload = { sub: user._id, username: user.email };
+    const tokens = this.generateTokens(String(user._id), user.email);
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: '15m',
-    });
+    return tokens;
+  }
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: '7d',
-    });
-    return {
-      accessToken,
-      refreshToken,
-    };
+  hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  async generateTokens(userId: string, email: string) {
+    const accessToken = await this.jwtService.signAsync(
+      { sub: userId, email },
+      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
+    );
+
+    const refreshToken = await this.jwtService.signAsync(
+      { sub: userId, email },
+      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+    );
+
+    return { accessToken, refreshToken };
   }
 
   refreshToken(refreshToken: string) {
@@ -69,8 +85,8 @@ export class AuthService {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
       };
-    } catch (err) {
-      throw new UnauthorizedException(err);
+    } catch {
+      throw new UnauthorizedException("Token doesn't exist ");
     }
   }
 }

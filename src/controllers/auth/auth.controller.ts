@@ -40,7 +40,6 @@ export class AuthController {
       maxAge: 15 * 60 * 1000,
       secure: this.checkSecure(),
       sameSite: 'strict',
-      path: '/auth/login',
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
@@ -48,7 +47,6 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: this.checkSecure(),
       sameSite: 'strict',
-      path: '/auth/login',
     });
     return { message: `User ${body.email} has been logged in` };
   }
