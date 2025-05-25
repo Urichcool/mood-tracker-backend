@@ -26,7 +26,6 @@ export class RefreshTokenGuard implements CanActivate {
       .getRequest<Request & { cookies: Record<string, string> }>();
 
     const token = req.cookies?.refreshToken as string;
-    console.log(token);
     if (!token) {
       throw new UnauthorizedException('token required');
     }

@@ -18,6 +18,9 @@ export class CreateUserDto {
   password: string;
 
   @IsString()
+  refreshToken: string;
+
+  @IsString()
   @IsDefined()
   name: string;
 

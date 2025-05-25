@@ -4,10 +4,13 @@ import {
   Controller,
   Patch,
   Post,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import {
   CreateUserDto,
   UpdateUserNameDto,
@@ -21,15 +24,29 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private authService: AuthService,
+    private configService: ConfigService,
   ) {}
   @Post('register')
-  async register(@Body() body: CreateUserDto): Promise<{ message: string }> {
+  async register(
+    @Body() body: CreateUserDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string; accessToken: string }> {
     const user = (await this.usersService.create(body)) as {
       id: string;
       email: string;
     };
     const tokens = await this.authService.register(user.id, user.email);
-    return { message: `user ${user.email} created` };
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return {
+      message: `user ${user.email} created`,
+      accessToken: tokens.accessToken,
+    };
   }
 
   @Patch('update/name')

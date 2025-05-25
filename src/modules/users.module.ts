@@ -5,6 +5,7 @@ import { User, UserSchema } from 'src/schemas/user.schema';
 import { ImageService } from 'src/services/users/image.service';
 import { UsersService } from 'src/services/users/users.service';
 import { CloudinaryModule } from './cloudinary.module';
+import { AuthService } from 'src/services/auth/auth.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { CloudinaryModule } from './cloudinary.module';
     CloudinaryModule,
   ],
   controllers: [UsersController],
-  providers: [UsersService, ImageService],
+  providers: [UsersService, ImageService, AuthService],
   exports: [UsersService],
 })
 export class UsersModule {}

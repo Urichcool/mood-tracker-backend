@@ -21,12 +21,10 @@ export interface CustomRequest extends Request {
 
 @Controller('Auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
-
-  checkSecure() {
-    const configService = new ConfigService();
-    return configService.get<string>('NODE_ENV') === 'production';
-  }
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -34,48 +32,41 @@ export class AuthController {
     @Body() body: SignInDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tokens = await this.authService.signIn(body.email, body.password);
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      maxAge: 15 * 60 * 1000,
-      secure: this.checkSecure(),
-      sameSite: 'strict',
-    });
+    const { accessToken, refreshToken } = await this.authService.signIn(
+      body.email,
+      body.password,
+    );
 
-    res.cookie('refreshToken', tokens.refreshToken, {
+    res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: this.checkSecure(),
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
       sameSite: 'strict',
     });
-    return { message: `User ${body.email} has been logged in` };
+    return {
+      message: `User ${body.email} has been logged in`,
+      accessToken: accessToken,
+    };
   }
 
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
-  refresh(
+  async refresh(
     @Req() req: CustomRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
     const oldToken = req.cookies?.refreshToken;
 
     const { accessToken, refreshToken } =
-      this.authService.refreshToken(oldToken);
-
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      maxAge: 15 * 60 * 1000,
-      sameSite: 'strict',
-      secure: this.checkSecure(),
-    });
+      await this.authService.refreshToken(oldToken);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: 'strict',
-      secure: this.checkSecure(),
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
     });
 
-    return { message: 'Tokens refreshed' };
+    return { message: 'Tokens refreshed', accessToken: accessToken };
   }
 }

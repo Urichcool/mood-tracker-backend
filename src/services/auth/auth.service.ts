@@ -1,8 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -25,7 +30,11 @@ export class AuthService {
     email: string,
     pass: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = await this.usersService.findUser(email);
+    const user = (await this.usersService.findUser(email)) as {
+      id: string;
+      email: string;
+      password: string;
+    };
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -33,7 +42,14 @@ export class AuthService {
       throw new UnauthorizedException('Password is incorrect');
     }
 
-    const tokens = this.generateTokens(String(user._id), user.email);
+    const tokens = (await this.generateTokens(user.id, user.email)) as {
+      accessToken: string;
+      refreshToken: string;
+    };
+    await this.usersService.setRefreshToken(
+      user.id,
+      this.hashToken(tokens.refreshToken),
+    );
 
     return tokens;
   }
@@ -45,48 +61,67 @@ export class AuthService {
   async generateTokens(userId: string, email: string) {
     const accessToken = await this.jwtService.signAsync(
       { sub: userId, email },
-      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
+      {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: '15m',
+      },
     );
 
     const refreshToken = await this.jwtService.signAsync(
       { sub: userId, email },
-      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+      {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: '7d',
+      },
     );
 
     return { accessToken, refreshToken };
   }
 
-  refreshToken(refreshToken: string) {
+  async verifyRefreshToken(
+    oldToken: string,
+    refreshToken: string,
+  ): Promise<boolean> {
+    return (await bcrypt.compare(oldToken, refreshToken)) as boolean;
+  }
+
+  async refreshToken(oldToken: string) {
     try {
       const payload: { sub: string; username: string } = this.jwtService.verify(
-        refreshToken,
+        oldToken,
         {
           secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
         },
       );
 
-      const newAccessToken = this.jwtService.sign(
-        { sub: payload.sub, username: payload.username },
-        {
-          secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-          expiresIn: '15m',
-        },
-      );
-
-      const newRefreshToken = this.jwtService.sign(
-        { sub: payload.sub, username: payload.username },
-        {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-          expiresIn: '7d',
-        },
-      );
-
-      return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
+      const user = (await this.usersService.findUserById(payload.sub)) as {
+        refreshToken: string;
+        id: string;
       };
+
+      if (!user || !user.refreshToken)
+        throw new ForbiddenException('Access denied');
+
+      const isMatch = await this.verifyRefreshToken(
+        oldToken,
+        user.refreshToken,
+      );
+      console.log(isMatch);
+      if (!isMatch) throw new ForbiddenException('Token mismatch');
+
+      const newTokens = await this.generateTokens(
+        payload.sub,
+        payload.username,
+      );
+
+      await this.usersService.setRefreshToken(
+        user.id,
+        this.hashToken(newTokens.refreshToken),
+      );
+
+      return newTokens;
     } catch {
-      throw new UnauthorizedException("Token doesn't exist ");
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }

@@ -33,13 +33,13 @@ export class UsersService {
     return this.UserModel.findOne({ email });
   }
 
-  UpdateRefreshToken(id: string, token: string) {
-    return this.UserModel.findByIdAndUpdate(id, { refreshToken: token });
+  findUserById(id: string) {
+    return this.UserModel.findById(id);
   }
 
   async setRefreshToken(userId: string, hashedToken: string) {
     await this.UserModel.findByIdAndUpdate(userId, {
-      refreshTokenHash: hashedToken,
+      refreshToken: hashedToken,
     });
   }
 }
