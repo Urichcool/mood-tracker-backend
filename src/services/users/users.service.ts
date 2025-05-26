@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
 import { User, UserDocument } from 'src/schemas/user.schema';
-import { ImageService } from './image.service';
+import { ImageService } from '../images/image.service';
 
 @Injectable()
 export class UsersService {
@@ -27,5 +27,19 @@ export class UsersService {
       const imageUrl = result.secure_url;
       return this.UserModel.findByIdAndUpdate(id, { imageUrl: imageUrl });
     }
+  }
+
+  findUserByEmail(email: string) {
+    return this.UserModel.findOne({ email });
+  }
+
+  findUserById(id: string) {
+    return this.UserModel.findById(id);
+  }
+
+  async setRefreshToken(userId: string, hashedToken: string) {
+    await this.UserModel.findByIdAndUpdate(userId, {
+      refreshToken: hashedToken,
+    });
   }
 }

@@ -16,6 +16,9 @@ export class User {
   @Prop()
   imageUrl: string;
 
+  @Prop()
+  refreshToken: string;
+
   @Prop({ type: [MoodEntries] })
   moodEntries: MoodEntries[];
 }

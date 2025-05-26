@@ -35,7 +35,7 @@ describe('UsersController', () => {
       imageUrl: '',
       moodEntries: [],
     };
-    const result = await controller.createUser(dto);
+    const result = await controller.register(dto);
     expect(result).toEqual({ message: `user ${dto.email} created` });
     expect(usersService.create).toHaveBeenCalledWith(dto);
   });
