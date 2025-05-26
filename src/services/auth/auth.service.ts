@@ -6,7 +6,6 @@ import {
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
 @Injectable()
@@ -21,7 +20,7 @@ export class AuthService {
     const tokens = await this.generateTokens(id, email);
     await this.usersService.setRefreshToken(
       id,
-      this.hashToken(tokens.refreshToken),
+      await this.hashToken(tokens.refreshToken),
     );
     return tokens;
   }
@@ -30,15 +29,16 @@ export class AuthService {
     email: string,
     pass: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = (await this.usersService.findUser(email)) as {
+    const user = (await this.usersService.findUserByEmail(email)) as {
       id: string;
       email: string;
       password: string;
     };
+    const isMatch = await bcrypt.compare(pass, user.password);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    if (user?.password !== pass) {
+    if (isMatch) {
       throw new UnauthorizedException('Password is incorrect');
     }
 
@@ -48,14 +48,15 @@ export class AuthService {
     };
     await this.usersService.setRefreshToken(
       user.id,
-      this.hashToken(tokens.refreshToken),
+      await this.hashToken(tokens.refreshToken),
     );
 
     return tokens;
   }
 
-  hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
+  async hashToken(token: string): Promise<string> {
+    const salt = await bcrypt.genSalt();
+    return bcrypt.hash(token, salt);
   }
 
   async generateTokens(userId: string, email: string) {
@@ -82,7 +83,7 @@ export class AuthService {
     oldToken: string,
     refreshToken: string,
   ): Promise<boolean> {
-    return (await bcrypt.compare(oldToken, refreshToken)) as boolean;
+    return await bcrypt.compare(oldToken, refreshToken);
   }
 
   async refreshToken(oldToken: string) {
@@ -106,7 +107,6 @@ export class AuthService {
         oldToken,
         user.refreshToken,
       );
-      console.log(isMatch);
       if (!isMatch) throw new ForbiddenException('Token mismatch');
 
       const newTokens = await this.generateTokens(
@@ -116,7 +116,7 @@ export class AuthService {
 
       await this.usersService.setRefreshToken(
         user.id,
-        this.hashToken(newTokens.refreshToken),
+        await this.hashToken(newTokens.refreshToken),
       );
 
       return newTokens;

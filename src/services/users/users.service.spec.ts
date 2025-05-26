@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
-import { ImageService } from './image.service';
+import { ImageService } from '../images/image.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { UpdateUserNameDto } from 'src/Dto/user.dto';
 

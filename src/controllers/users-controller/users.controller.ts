@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Patch,
   Post,
@@ -18,6 +19,7 @@ import {
 } from 'src/Dto/user.dto';
 import { AuthService } from 'src/services/auth/auth.service';
 import { UsersService } from 'src/services/users/users.service';
+import * as bcrypt from 'bcrypt';
 
 @Controller('Users')
 export class UsersController {
@@ -31,7 +33,15 @@ export class UsersController {
     @Body() body: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string; accessToken: string }> {
-    const user = (await this.usersService.create(body)) as {
+    const isUserExist = await this.usersService.findUserByEmail(body.email);
+    if (isUserExist) {
+      throw new ConflictException('User with this email already exists');
+    }
+    const hashedPassword: string = await bcrypt.hash(body.password, 10);
+    const user = (await this.usersService.create({
+      ...body,
+      password: hashedPassword,
+    })) as {
       id: string;
       email: string;
     };

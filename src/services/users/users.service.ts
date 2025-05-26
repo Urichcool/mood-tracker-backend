@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
 import { User, UserDocument } from 'src/schemas/user.schema';
-import { ImageService } from './image.service';
+import { ImageService } from '../images/image.service';
 
 @Injectable()
 export class UsersService {
@@ -29,7 +29,7 @@ export class UsersService {
     }
   }
 
-  findUser(email: string) {
+  findUserByEmail(email: string) {
     return this.UserModel.findOne({ email });
   }
 

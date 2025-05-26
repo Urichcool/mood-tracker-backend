@@ -35,7 +35,7 @@ export class RefreshTokenGuard implements CanActivate {
       });
       req['user'] = payload;
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('invalid token');
     }
     return true;
   }
