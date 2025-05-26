@@ -63,7 +63,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    if (isMatch) {
+    if (!isMatch) {
       throw new UnauthorizedException('Password is incorrect');
     }
 

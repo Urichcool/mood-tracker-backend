@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from 'src/controllers/auth/auth.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RefreshTokenGuard } from 'src/guards/auth/auth.guard';
+import { MoodEntriesModule } from './mood-entries.module';
 
 const configService = new ConfigService();
 
@@ -17,6 +18,7 @@ const configService = new ConfigService();
       secret: configService.get<string>('JWT_REFRESH_SECRET'),
       signOptions: { expiresIn: '15m' },
     }),
+    MoodEntriesModule,
   ],
   providers: [AuthService, RefreshTokenGuard],
   controllers: [AuthController],

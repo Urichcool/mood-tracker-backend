@@ -5,7 +5,7 @@ import {
   IsDefined,
   IsArray,
 } from 'class-validator';
-import { CreateMoodEntriesDto } from './create-mood-entries.dto';
+import { MoodEntryDto } from './mood-entry.dto';
 import { Type } from 'class-transformer';
 
 export class CreateUserDto {
@@ -28,8 +28,8 @@ export class CreateUserDto {
   @IsArray()
   @IsDefined()
   @ValidateNested({ each: true })
-  @Type(() => CreateMoodEntriesDto)
-  moodEntries: CreateMoodEntriesDto[];
+  @Type(() => MoodEntryDto)
+  moodEntries: MoodEntryDto[];
 }
 
 export class UpdateUserNameDto {
