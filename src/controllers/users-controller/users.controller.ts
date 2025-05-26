@@ -28,6 +28,11 @@ export class UsersController {
     private authService: AuthService,
     private configService: ConfigService,
   ) {}
+
+  private hashPasword(password: string): Promise<string> {
+    return bcrypt.hash(password, 10);
+  }
+
   @Post('register')
   async register(
     @Body() body: CreateUserDto,
@@ -37,7 +42,7 @@ export class UsersController {
     if (isUserExist) {
       throw new ConflictException('User with this email already exists');
     }
-    const hashedPassword: string = await bcrypt.hash(body.password, 10);
+    const hashedPassword: string = await this.hashPasword(body.password);
     const user = (await this.usersService.create({
       ...body,
       password: hashedPassword,

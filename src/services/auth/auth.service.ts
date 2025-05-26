@@ -16,6 +16,31 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
+  private async hashToken(token: string): Promise<string> {
+    const salt = await bcrypt.genSalt();
+    return bcrypt.hash(token, salt);
+  }
+
+  private async generateTokens(userId: string, email: string) {
+    const accessToken = await this.jwtService.signAsync(
+      { sub: userId, email },
+      {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: '15m',
+      },
+    );
+
+    const refreshToken = await this.jwtService.signAsync(
+      { sub: userId, email },
+      {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: '7d',
+      },
+    );
+
+    return { accessToken, refreshToken };
+  }
+
   async register(id: string, email: string) {
     const tokens = await this.generateTokens(id, email);
     await this.usersService.setRefreshToken(
@@ -54,32 +79,7 @@ export class AuthService {
     return tokens;
   }
 
-  async hashToken(token: string): Promise<string> {
-    const salt = await bcrypt.genSalt();
-    return bcrypt.hash(token, salt);
-  }
-
-  async generateTokens(userId: string, email: string) {
-    const accessToken = await this.jwtService.signAsync(
-      { sub: userId, email },
-      {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: '15m',
-      },
-    );
-
-    const refreshToken = await this.jwtService.signAsync(
-      { sub: userId, email },
-      {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: '7d',
-      },
-    );
-
-    return { accessToken, refreshToken };
-  }
-
-  async verifyRefreshToken(
+  private async verifyRefreshToken(
     oldToken: string,
     refreshToken: string,
   ): Promise<boolean> {
