@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { ImageService } from '../images/image.service';
+import { UploadApiResponse } from 'cloudinary';
 
 @Injectable()
 export class UsersService {
@@ -12,32 +13,36 @@ export class UsersService {
     private readonly imageService: ImageService,
   ) {}
 
-  create(user: IUser) {
+  create(user: IUser): Promise<object | null> {
     const createdUser = new this.UserModel(user);
     return createdUser.save();
   }
 
-  updateName(id: string, updatedName: string) {
-    return this.UserModel.findByIdAndUpdate(id, { name: updatedName });
+  async updateName(id: string, updatedName: string): Promise<object | null> {
+    return await this.UserModel.findByIdAndUpdate(id, { name: updatedName });
   }
 
-  async updateImage(id: string, updatedPicture: Express.Multer.File) {
-    const result = await this.imageService.uploadToCloudinary(updatedPicture);
+  async updateImage(
+    id: string,
+    updatedPicture: Express.Multer.File,
+  ): Promise<void | null> {
+    const result: UploadApiResponse | undefined =
+      await this.imageService.uploadToCloudinary(updatedPicture);
     if (result) {
-      const imageUrl = result.secure_url;
+      const imageUrl: string = result.secure_url;
       return this.UserModel.findByIdAndUpdate(id, { imageUrl: imageUrl });
     }
   }
 
-  findUserByEmail(email: string) {
-    return this.UserModel.findOne({ email });
+  async findUserByEmail(email: string): Promise<object | null> {
+    return await this.UserModel.findOne({ email });
   }
 
-  findUserById(id: string) {
-    return this.UserModel.findById(id);
+  async findUserById(id: string): Promise<object | null> {
+    return await this.UserModel.findById(id);
   }
 
-  async setRefreshToken(userId: string, hashedToken: string) {
+  async setRefreshToken(userId: string, hashedToken: string): Promise<void> {
     await this.UserModel.findByIdAndUpdate(userId, {
       refreshToken: hashedToken,
     });

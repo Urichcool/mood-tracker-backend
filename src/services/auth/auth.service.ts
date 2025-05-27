@@ -17,12 +17,15 @@ export class AuthService {
   ) {}
 
   private async hashToken(token: string): Promise<string> {
-    const salt = await bcrypt.genSalt();
+    const salt: string = await bcrypt.genSalt();
     return bcrypt.hash(token, salt);
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const accessToken = await this.jwtService.signAsync(
+  private async generateTokens(
+    userId: string,
+    email: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken: string = await this.jwtService.signAsync(
       { sub: userId, email },
       {
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
@@ -30,7 +33,7 @@ export class AuthService {
       },
     );
 
-    const refreshToken = await this.jwtService.signAsync(
+    const refreshToken: string = await this.jwtService.signAsync(
       { sub: userId, email },
       {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
@@ -41,8 +44,12 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async register(id: string, email: string) {
-    const tokens = await this.generateTokens(id, email);
+  async register(
+    id: string,
+    email: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const tokens: { accessToken: string; refreshToken: string } =
+      await this.generateTokens(id, email);
     await this.usersService.setRefreshToken(
       id,
       await this.hashToken(tokens.refreshToken),
@@ -59,7 +66,7 @@ export class AuthService {
       email: string;
       password: string;
     };
-    const isMatch = await bcrypt.compare(pass, user.password);
+    const isMatch: boolean = await bcrypt.compare(pass, user.password);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -86,7 +93,9 @@ export class AuthService {
     return await bcrypt.compare(oldToken, refreshToken);
   }
 
-  async refreshToken(oldToken: string) {
+  async refreshToken(
+    oldToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       const payload: { sub: string; username: string } = this.jwtService.verify(
         oldToken,
@@ -103,16 +112,14 @@ export class AuthService {
       if (!user || !user.refreshToken)
         throw new ForbiddenException('Access denied');
 
-      const isMatch = await this.verifyRefreshToken(
+      const isMatch: boolean = await this.verifyRefreshToken(
         oldToken,
         user.refreshToken,
       );
       if (!isMatch) throw new ForbiddenException('Token mismatch');
 
-      const newTokens = await this.generateTokens(
-        payload.sub,
-        payload.username,
-      );
+      const newTokens: { accessToken: string; refreshToken: string } =
+        await this.generateTokens(payload.sub, payload.username);
 
       await this.usersService.setRefreshToken(
         user.id,

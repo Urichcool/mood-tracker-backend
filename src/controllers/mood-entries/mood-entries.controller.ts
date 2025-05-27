@@ -7,7 +7,12 @@ export class MoodEntriesController {
   constructor(private moodEntriesService: MoodEntriesService) {}
 
   @Post('create')
-  CreateMoodEntry(@Body() body: CreateMoodEntryDto) {
-    this.moodEntriesService.addMoodEntry(body.id, body.moodEntry);
+  async CreateMoodEntry(
+    @Body() body: CreateMoodEntryDto,
+  ): Promise<{ message: string }> {
+    await this.moodEntriesService.addMoodEntry(body.id, body.moodEntry);
+    return {
+      message: `mood entry created`,
+    };
   }
 }

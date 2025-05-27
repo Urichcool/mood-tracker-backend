@@ -38,7 +38,9 @@ export class UsersController {
     @Body() body: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string; accessToken: string }> {
-    const isUserExist = await this.usersService.findUserByEmail(body.email);
+    const isUserExist: object | null = await this.usersService.findUserByEmail(
+      body.email,
+    );
     if (isUserExist) {
       throw new ConflictException('User with this email already exists');
     }
@@ -50,7 +52,10 @@ export class UsersController {
       id: string;
       email: string;
     };
-    const tokens = await this.authService.register(user.id, user.email);
+    const tokens: {
+      accessToken: string;
+      refreshToken: string;
+    } = await this.authService.register(user.id, user.email);
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: this.configService.get<string>('NODE_ENV') === 'production',
@@ -78,7 +83,11 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
     @Body() body: UpdateUserPictureDto,
   ) {
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedMimeTypes: string[] = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
 
     if (!file) throw new BadRequestException('Image file is required');
 

@@ -7,14 +7,14 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 @Injectable()
 export class MoodEntriesService {
   constructor(@InjectModel(User.name) private UserModel: Model<UserDocument>) {}
-  addMoodEntry(id: string, moodEntry: IMoodEntries) {
-    this.UserModel.updateOne(
-      { _id: id },
-      {
-        $push: {
-          moodEntries: moodEntry,
-        },
+  async addMoodEntry(
+    id: string,
+    moodEntry: IMoodEntries,
+  ): Promise<object | null> {
+    return await this.UserModel.findByIdAndUpdate(id, {
+      $push: {
+        moodEntries: moodEntry,
       },
-    );
+    });
   }
 }
