@@ -31,11 +31,14 @@ export class AuthController {
   async login(
     @Body() body: SignInDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
-    const { accessToken, refreshToken } = await this.authService.signIn(
-      body.email,
-      body.password,
-    );
+  ): Promise<{ message: string; accessToken: string }> {
+    const {
+      accessToken,
+      refreshToken,
+    }: {
+      accessToken: string;
+      refreshToken: string;
+    } = await this.authService.signIn(body.email, body.password);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -54,11 +57,16 @@ export class AuthController {
   async refresh(
     @Req() req: CustomRequest,
     @Res({ passthrough: true }) res: Response,
-  ) {
-    const oldToken = req.cookies?.refreshToken;
+  ): Promise<{ message: string; accessToken: string }> {
+    const oldToken: string = req.cookies?.refreshToken;
 
-    const { accessToken, refreshToken } =
-      await this.authService.refreshToken(oldToken);
+    const {
+      accessToken,
+      refreshToken,
+    }: {
+      accessToken: string;
+      refreshToken: string;
+    } = await this.authService.refreshToken(oldToken);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,

@@ -30,9 +30,12 @@ export class RefreshTokenGuard implements CanActivate {
       throw new UnauthorizedException('token required');
     }
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      });
+      const payload: JwtPayload = await this.jwtService.verifyAsync<JwtPayload>(
+        token,
+        {
+          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        },
+      );
       req['user'] = payload;
     } catch {
       throw new UnauthorizedException('invalid token');
