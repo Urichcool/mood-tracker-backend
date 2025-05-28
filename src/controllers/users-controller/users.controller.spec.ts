@@ -1,100 +1,169 @@
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { UsersController } from './users.controller';
-// import { UsersService } from 'src/services/users/users.service';
-// import { BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersController } from './users.controller';
+import { UsersService } from 'src/services/users/users.service';
+import { AuthService } from 'src/services/auth/auth.service';
+import { ConfigService } from '@nestjs/config';
+import { ConflictException, BadRequestException } from '@nestjs/common';
+import { Response } from 'express';
 
-// describe('UsersController', () => {
-//   let controller: UsersController;
-//   let usersService: Partial<UsersService>;
+describe('UsersController', () => {
+  let controller: UsersController;
 
-//   beforeEach(async () => {
-//     usersService = {
-//       create: jest.fn(),
-//       updateName: jest.fn(),
-//       updateImage: jest.fn(),
-//     };
+  const mockUsersService = {
+    findUserByEmail: jest.fn(),
+    create: jest.fn(),
+    updateName: jest.fn(),
+    updateImage: jest.fn(),
+  };
 
-//     const module: TestingModule = await Test.createTestingModule({
-//       controllers: [UsersController],
-//       providers: [
-//         {
-//           provide: UsersService,
-//           useValue: usersService,
-//         },
-//       ],
-//     }).compile();
+  const mockAuthService = {
+    register: jest.fn(),
+  };
 
-//     controller = module.get<UsersController>(UsersController);
-//   });
+  const mockConfigService = {
+    get: jest.fn().mockReturnValue('development'),
+  };
 
-//   it('should create a user', async () => {
-//     const dto = {
-//       email: 'test@example.com',
-//       password: 'secret',
-//       name: 'example',
-//       imageUrl: '',
-//       moodEntries: [],
-//     };
-//     const result = await controller.register(dto);
-//     expect(result).toEqual({ message: `user ${dto.email} created` });
-//     expect(usersService.create).toHaveBeenCalledWith(dto);
-//   });
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UsersController],
+      providers: [
+        { provide: UsersService, useValue: mockUsersService },
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: ConfigService, useValue: mockConfigService },
+      ],
+    }).compile();
 
-//   it("should update user's name", async () => {
-//     const dto = { id: '123ex', email: 'test@example.com', updatedName: 'John' };
-//     const result = await controller.updateUserName(dto);
-//     expect(result).toEqual({ message: `user's ${dto.email} name updated` });
-//     expect(usersService.updateName).toHaveBeenCalledWith('123ex', 'John');
-//   });
+    controller = module.get<UsersController>(UsersController);
+  });
 
-//   describe('uploadImage', () => {
-//     const mockBody = { id: '123ex', email: 'test@example.com' };
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-//     it('should upload a valid image', async () => {
-//       const mockFile = {
-//         size: 1024 * 1024,
-//         mimetype: 'image/png',
-//       } as Express.Multer.File;
+  describe('register', () => {
+    it('should throw ConflictException if user already exists', async () => {
+      mockUsersService.findUserByEmail.mockResolvedValue({ id: '1' });
 
-//       const result = await controller.uploadImage(mockFile, mockBody);
-//       expect(result).toEqual({
-//         message: `user's ${mockBody.email} image updated`,
-//       });
-//       expect(usersService.updateImage).toHaveBeenCalledWith(
-//         mockBody.id,
-//         mockFile,
-//       );
-//     });
+      await expect(
+        controller.register(
+          {
+            email: 'test@example.com',
+            password: 'pass123',
+            name: 'test',
+            imageUrl: '',
+            moodEntries: [],
+          },
+          {} as Response,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
 
-//     it('should throw if file is missing', async () => {
-//       await expect(
-//         controller.uploadImage(
-//           undefined as unknown as Express.Multer.File,
-//           mockBody,
-//         ),
-//       ).rejects.toThrow(BadRequestException);
-//     });
+    it('should register a new user and return tokens', async () => {
+      mockUsersService.findUserByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: '1',
+        email: 'test@example.com',
+      });
+      mockAuthService.register.mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+      });
 
-//     it('should throw if file is too large', async () => {
-//       const mockFile = {
-//         size: 6 * 1024 * 1024,
-//         mimetype: 'image/png',
-//       } as Express.Multer.File;
+      const mockRes = {
+        cookie: jest.fn(),
+      } as unknown as Response;
 
-//       await expect(controller.uploadImage(mockFile, mockBody)).rejects.toThrow(
-//         new BadRequestException('File size exceeds 5MB'),
-//       );
-//     });
+      const result = await controller.register(
+        {
+          email: 'test@example.com',
+          password: 'pass123',
+          name: 'test',
+          imageUrl: '',
+          moodEntries: [],
+        },
+        mockRes,
+      );
 
-//     it('should throw for invalid mime type', async () => {
-//       const mockFile = {
-//         size: 1024,
-//         mimetype: 'application/pdf',
-//       } as Express.Multer.File;
+      expect(mockUsersService.findUserByEmail).toHaveBeenCalledWith(
+        'test@example.com',
+      );
+      expect(mockUsersService.create).toHaveBeenCalled();
+      expect(mockAuthService.register).toHaveBeenCalledWith(
+        '1',
+        'test@example.com',
+      );
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRes.cookie).toHaveBeenCalled();
+      expect(result).toEqual({
+        message: 'user test@example.com created',
+        accessToken: 'access',
+      });
+    });
+  });
 
-//       await expect(controller.uploadImage(mockFile, mockBody)).rejects.toThrow(
-//         new BadRequestException(`Invalid file type: ${mockFile.mimetype}`),
-//       );
-//     });
-//   });
-// });
+  describe('updateUserName', () => {
+    it(`should update the user's name and return a success message`, async () => {
+      const body = {
+        id: '1',
+        email: 'user@example.com',
+        updatedName: 'New Name',
+      };
+
+      mockUsersService.updateName.mockResolvedValue(undefined);
+
+      const result = await controller.updateUserName(body);
+
+      expect(mockUsersService.updateName).toHaveBeenCalledWith('1', 'New Name');
+      expect(result).toEqual({
+        message: `user's user@example.com name updated`,
+      });
+    });
+  });
+
+  describe('uploadImage', () => {
+    const validFile = {
+      mimetype: 'image/jpeg',
+      size: 1024,
+    } as Express.Multer.File;
+
+    const body = {
+      id: '1',
+      email: 'user@example.com',
+    };
+
+    it('should throw if no file is uploaded', async () => {
+      await expect(
+        controller.uploadImage(
+          undefined as unknown as Express.Multer.File,
+          body,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw if file is too large', async () => {
+      const largeFile = { ...validFile, size: 6 * 1024 * 1024 };
+      await expect(controller.uploadImage(largeFile, body)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw if file type is invalid', async () => {
+      const invalidFile = { ...validFile, mimetype: 'application/pdf' };
+      await expect(controller.uploadImage(invalidFile, body)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should update image successfully', async () => {
+      mockUsersService.updateImage.mockResolvedValue(undefined);
+
+      const result = await controller.uploadImage(validFile, body);
+
+      expect(mockUsersService.updateImage).toHaveBeenCalledWith('1', validFile);
+      expect(result).toEqual({
+        message: `user's user@example.com image updated`,
+      });
+    });
+  });
+});
