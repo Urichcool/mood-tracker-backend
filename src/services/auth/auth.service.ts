@@ -66,14 +66,16 @@ export class AuthService {
       email: string;
       password: string;
     };
-    const isMatch: boolean = await bcrypt.compare(pass, user.password);
+
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
+
+    const isMatch: boolean = await bcrypt.compare(pass, user.password);
+
     if (!isMatch) {
       throw new UnauthorizedException('Password is incorrect');
     }
-
     const tokens = (await this.generateTokens(user.id, user.email)) as {
       accessToken: string;
       refreshToken: string;
@@ -92,43 +94,39 @@ export class AuthService {
   ): Promise<boolean> {
     return await bcrypt.compare(oldToken, refreshToken);
   }
-
   async refreshToken(
     oldToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
+    let payload: { sub: string; username: string };
     try {
-      const payload: { sub: string; username: string } = this.jwtService.verify(
-        oldToken,
-        {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        },
-      );
-
-      const user = (await this.usersService.findUserById(payload.sub)) as {
-        refreshToken: string;
-        id: string;
-      };
-
-      if (!user || !user.refreshToken)
-        throw new ForbiddenException('Access denied');
-
-      const isMatch: boolean = await this.verifyRefreshToken(
-        oldToken,
-        user.refreshToken,
-      );
-      if (!isMatch) throw new ForbiddenException('Token mismatch');
-
-      const newTokens: { accessToken: string; refreshToken: string } =
-        await this.generateTokens(payload.sub, payload.username);
-
-      await this.usersService.setRefreshToken(
-        user.id,
-        await this.hashToken(newTokens.refreshToken),
-      );
-
-      return newTokens;
+      payload = this.jwtService.verify(oldToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
+
+    const user = (await this.usersService.findUserById(payload.sub)) as {
+      refreshToken: string;
+      id: string;
+    };
+
+    if (!user || !user.refreshToken)
+      throw new ForbiddenException('Access denied');
+
+    const isMatch: boolean = await this.verifyRefreshToken(
+      oldToken,
+      user.refreshToken,
+    );
+    if (!isMatch) throw new ForbiddenException('Token mismatch');
+
+    const newTokens = await this.generateTokens(payload.sub, payload.username);
+
+    await this.usersService.setRefreshToken(
+      user.id,
+      await this.hashToken(newTokens.refreshToken),
+    );
+
+    return newTokens;
   }
 }
