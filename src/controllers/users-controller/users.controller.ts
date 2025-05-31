@@ -20,6 +20,7 @@ import {
 import { AuthService } from 'src/services/auth/auth.service';
 import { UsersService } from 'src/services/users/users.service';
 import * as bcrypt from 'bcrypt';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
 
 @Controller('Users')
 export class UsersController {
@@ -32,7 +33,15 @@ export class UsersController {
   private hashPasword(password: string): Promise<string> {
     return bcrypt.hash(password, 10);
   }
-
+  @ApiBody({ type: CreateUserDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User has been created.',
+    example: {
+      message: `User john@example.com created`,
+      accessToken: 'example-token',
+    },
+  })
   @Post('register')
   async register(
     @Body() body: CreateUserDto,
@@ -69,6 +78,14 @@ export class UsersController {
     };
   }
 
+  @ApiBody({ type: UpdateUserNameDto })
+  @ApiResponse({
+    status: 200,
+    description: "User's name has been updated.",
+    example: {
+      message: `user's john@example.com name updated`,
+    },
+  })
   @Patch('update/name')
   async updateUserName(
     @Body() body: UpdateUserNameDto,
@@ -77,6 +94,14 @@ export class UsersController {
     return { message: `user's ${body.email} name updated` };
   }
 
+  @ApiBody({ type: UpdateUserPictureDto })
+  @ApiResponse({
+    status: 200,
+    description: "User's image has been updated.",
+    example: {
+      message: `user's john@example.com image updated`,
+    },
+  })
   @Patch('upload/image')
   @UseInterceptors(FileInterceptor('image'))
   async uploadImage(
