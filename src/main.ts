@@ -15,7 +15,11 @@ async function bootstrap() {
     .setTitle('Mood tracker API')
     .setDescription('Custom API for mood tracker app')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addCookieAuth('refreshToken', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'refreshToken',
+    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
