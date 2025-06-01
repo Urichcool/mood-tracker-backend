@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUser } from 'src/interfaces/user.interface';
@@ -14,23 +14,35 @@ export class UsersService {
   ) {}
 
   create(user: IUser): Promise<object | null> {
-    const createdUser = new this.UserModel(user);
-    return createdUser.save();
+    try {
+      const createdUser = new this.UserModel(user);
+      return createdUser.save();
+    } catch {
+      throw new BadRequestException('Failed to create document');
+    }
   }
 
   async updateName(id: string, updatedName: string): Promise<object | null> {
-    return await this.UserModel.findByIdAndUpdate(id, { name: updatedName });
+    try {
+      return await this.UserModel.findByIdAndUpdate(id, { name: updatedName });
+    } catch {
+      throw new BadRequestException("Failed to update user's name");
+    }
   }
 
   async updateImage(
     id: string,
     updatedPicture: Express.Multer.File,
   ): Promise<void | null> {
-    const result: UploadApiResponse | undefined =
-      await this.imageService.uploadToCloudinary(updatedPicture);
-    if (result) {
-      const imageUrl: string = result.secure_url;
-      return this.UserModel.findByIdAndUpdate(id, { imageUrl: imageUrl });
+    try {
+      const result: UploadApiResponse | undefined =
+        await this.imageService.uploadToCloudinary(updatedPicture);
+      if (result) {
+        const imageUrl: string = result.secure_url;
+        return this.UserModel.findByIdAndUpdate(id, { imageUrl: imageUrl });
+      }
+    } catch {
+      throw new BadRequestException("Failed to update user's image");
     }
   }
 

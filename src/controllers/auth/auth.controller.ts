@@ -14,11 +14,13 @@ import { AuthService } from 'src/services/auth/auth.service';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenGuard } from 'src/guards/auth/auth.guard';
+import { ApiTags, ApiBody, ApiResponse, ApiHeader } from '@nestjs/swagger';
+import { ApiCookieAuth } from '@nestjs/swagger';
 
 export interface CustomRequest extends Request {
   cookies: Record<string, string>;
 }
-
+@ApiTags('Auth')
 @Controller('Auth')
 export class AuthController {
   constructor(
@@ -27,6 +29,19 @@ export class AuthController {
   ) {}
 
   @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: SignInDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User has been logged in.',
+    example: {
+      message: `User john@example.com has been logged in`,
+      accessToken: 'example-token',
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'User not found or incorrect password',
+  })
   @Post('login')
   async login(
     @Body() body: SignInDto,
@@ -53,6 +68,23 @@ export class AuthController {
   }
 
   @UseGuards(RefreshTokenGuard)
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens has been refreshed.',
+    example: {
+      message: `Tokens refreshed`,
+      accessToken: 'example-token',
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or missing refresh token' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
+  @ApiCookieAuth('refreshToken')
+  @ApiHeader({
+    name: 'Cookie',
+    description:
+      'Include the refreshToken cookie: refreshToken=your_token_here',
+    example: 'refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI...',
+  })
   @Post('refresh')
   async refresh(
     @Req() req: CustomRequest,
