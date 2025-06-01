@@ -42,6 +42,14 @@ export class UsersController {
       accessToken: 'example-token',
     },
   })
+  @ApiResponse({
+    status: 409,
+    description: 'User with this email already exists',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Failed to create document',
+  })
   @Post('register')
   async register(
     @Body() body: CreateUserDto,
@@ -86,6 +94,10 @@ export class UsersController {
       message: `user's john@example.com name updated`,
     },
   })
+  @ApiResponse({
+    status: 400,
+    description: "Failed to update user's name",
+  })
   @Patch('update/name')
   async updateUserName(
     @Body() body: UpdateUserNameDto,
@@ -101,6 +113,10 @@ export class UsersController {
     example: {
       message: `user's john@example.com image updated`,
     },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Failed to update user's image",
   })
   @Patch('upload/image')
   @UseInterceptors(FileInterceptor('image'))

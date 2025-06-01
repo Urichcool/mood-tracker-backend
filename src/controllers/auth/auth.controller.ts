@@ -38,6 +38,10 @@ export class AuthController {
       accessToken: 'example-token',
     },
   })
+  @ApiResponse({
+    status: 401,
+    description: 'User not found or incorrect password',
+  })
   @Post('login')
   async login(
     @Body() body: SignInDto,
@@ -73,6 +77,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Invalid or missing refresh token' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
   @ApiCookieAuth('refreshToken')
   @ApiHeader({
     name: 'Cookie',

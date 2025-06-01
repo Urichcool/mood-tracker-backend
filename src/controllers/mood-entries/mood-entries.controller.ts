@@ -16,6 +16,10 @@ export class MoodEntriesController {
       message: `mood entry created`,
     },
   })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
   async CreateMoodEntry(
     @Body() body: CreateMoodEntryDto,
   ): Promise<{ message: string }> {
